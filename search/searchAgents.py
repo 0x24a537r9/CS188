@@ -40,6 +40,7 @@ from game import Actions
 from itertools import permutations
 import util
 import time
+import random
 import search
 
 class GoWestAgent(Agent):
@@ -372,7 +373,7 @@ def cornersHeuristic(state, problem):
 
 def nearestCornersManhattanHeuristic(state, problem):
     """Gets the Manhattan distance for the nearest corner. This is definitely
-    admissable, and as far as I can tell also consistent."""
+    admissable, but I don't think it's consistent."""
     position, cornersLeft = state
     return (
         0 if not cornersLeft
@@ -545,9 +546,167 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
+    return 0  # 60-cost path, 16,688 expansions in 1.8s
+    # return allFoodManhattanHeuristic(state, problem)  # Takes too long
+    # return allNFoodManhattanHeuristic(state, problem, 2)  # 12,531 expansions in 1.5s
+    # return allNFoodManhattanHeuristic(state, problem, 3)  # 16,688 expansions in 1.9s
+    # return farthestNFoodsManhattanHeuristic(state, problem, 1)  # 9,551 expansions in 1.8s
+    # return farthestNFoodsManhattanHeuristic(state, problem, 2)  # 8,560 expansions in 1.6s
+    # return farthestNFoodsManhattanHeuristic(state, problem, 3)  # 8,153 expansions in 1.7s
+    # return farthestNFoodsManhattanHeuristic(state, problem, 4)  # 7,921 expansions in 2.2s
+    # return farthestNFoodsManhattanHeuristic(state, problem, 5)  # 7,666 expansions in 5.9s
+    # return farthestNFoodsManhattanHeuristic(state, problem, 6)  # 7,427 expansions in 30s
+    # return farthestNFoodsManhattanHeuristic(state, problem, 8)  # Takes too long
+    # return farthestNFoodsMazeManhattanHeuristic(state, problem, 1)  # 10,768 expansions in 73s
+    # return farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, 2)  # 8,560 expansions in 2.0s
+    # return farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, 3)  # 8,153 expansions in 2.5s
+    # return farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, 4)  # 7,920 expansions in 3.8s
+    # return farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, 5)  # 7,666 expansions in 8.1s
+    # return farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, 6)  # 7,427 expansions in 20.6s
+    # return farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, 7)  # 7,175 expansions in 52.0s
+    # return farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, 8)  # 6,984 expansions in 137.1s
+    return farthestFoodMazeHeuristic(state, problem)  # 4,137 expansions in 28.1s
+
+def farthestFoodManhattanHeuristic(state, problem):
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+    foodPositions = foodGrid.asList()
+    if not foodPositions:
+        return 0
+
+    return max([0] + [
+        util.manhattanDistance(position, foodPosition)
+        for foodPosition in foodPositions
+    ])
+
+def allNFoodManhattanHeuristic(state, problem, n):
+    position, foodGrid = state
+    foodPositions = tuple((
+        (x, y)
+        for x in xrange(0, foodGrid.width, n)
+        for y in xrange(0, foodGrid.height, n)
+        if foodGrid[x][y]
+    ))
+    if not foodPositions:
+        return 0
+
+    return min((
+        util.manhattanDistance(position, perm[0]) +
+            sum((util.manhattanDistance(perm[ii - 1], perm[ii])
+                 for ii in xrange(1, len(perm))))
+        for perm in permutations(foodPositions)
+    ))
+
+def allFoodManhattanHeuristic(state, problem):
+    position, foodGrid = state
+    foodPositions = foodGrid.asList()
+    if not foodPositions:
+        return 0
+
+    return min((
+        util.manhattanDistance(position, perm[0]) +
+            sum((util.manhattanDistance(perm[ii - 1], perm[ii])
+                 for ii in xrange(1, len(perm))))
+        for perm in permutations(foodPositions)
+    ))
+
+def farthestNFoodsManhattanHeuristic(state, problem, n):
+    position, foodGrid = state
+    foodPositions = sorted(
+        foodGrid.asList(),
+        key=lambda foodPosition: util.manhattanDistance(position, foodPosition)
+    )[-n:]
+    if not foodPositions:
+        return 0
+
+    return min((
+        util.manhattanDistance(position, perm[0]) +
+            sum((util.manhattanDistance(perm[ii - 1], perm[ii])
+                 for ii in xrange(1, len(perm))))
+        for perm in permutations(foodPositions)
+    ))
+
+def farthestNFoodsMazeManhattanHeuristic(state, problem, n):
+    position, foodGrid = state
+    foodPositions = sorted(
+        foodGrid.asList(),
+        key=lambda foodPosition: mazeDistance(position, foodPosition, problem.startingGameState)
+    )[-n:]
+    if not foodPositions:
+        return 0
+
+    return min((
+        util.manhattanDistance(position, perm[0]) +
+            sum((util.manhattanDistance(perm[ii - 1], perm[ii])
+                 for ii in xrange(1, len(perm))))
+        for perm in permutations(foodPositions)
+    ))
+
+def farthestFoodMazeHeuristic(state, problem):
+    position, foodGrid = state
+    foodPositions = foodGrid.asList()
+    if not foodPositions:
+        return 0
+
+    return max((
+        mazeDistance(position, foodPosition, problem.startingGameState)
+        for foodPosition in foodPositions
+    ))
+
+def farthestNFoodsAStarFurthestFoodManhattanHeuristic(state, problem, n):
+    position, foodGrid = state
+    foodPositions = tuple(sorted(
+        foodGrid.asList(),
+        key=lambda foodPosition: util.manhattanDistance(position, foodPosition)
+    )[-n:])
+    if not foodPositions:
+        return 0
+
+    reducedProblem = ReducedFoodSearchProblem(position, foodPositions)
+    return reducedProblem.getCostOfActions(search.aStarSearch(
+        reducedProblem,
+        reducedFarthestFoodManhattanHeuristic,
+    ))
+
+def reducedFarthestFoodManhattanHeuristic(state, problem):
+    if not state[1]:
+        return 0
+
+    return min((
+        util.manhattanDistance(state[0], foodPosition)
+        for foodPosition in state[1]
+    ))
+
+class ReducedFoodSearchProblem:
+    """
+    A search problem associated with finding the a path that collects all of the
+    food (dots) in a Pacman game, but with no walls.
+
+    A search state in this problem is a tuple ( pacmanPosition, foodGrid ) where
+      pacmanPosition: a tuple (x,y) of integers specifying Pacman's position
+      foodPositions: a tuple of (x,y) tuples specifying the food's positions
+    """
+    def __init__(self, position, foodPositions):
+        self.start = (position, foodPositions)
+
+    def getStartState(self):
+        return self.start
+
+    def isGoalState(self, state):
+        return not state[1]
+
+    def getSuccessors(self, state):
+        "Returns successor states, the actions they require, and a cost."
+        position, foodPositions = state
+        foodPositions = set(foodPositions)
+        return tuple((
+            ((foodPosition, tuple(foodPositions - set((foodPosition,)))), (position, foodPosition), util.manhattanDistance(position, foodPosition))
+            for foodPosition in foodPositions
+        ))
+
+    def getCostOfActions(self, actions):
+        """Returns the cost of a particular sequence of actions.  If those actions
+        include an illegal move, return 999999"""
+        return sum((util.manhattanDistance(*action) for action in actions))
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
@@ -632,4 +791,4 @@ def mazeDistance(point1, point2, gameState):
     assert not walls[x1][y1], 'point1 is a wall: ' + str(point1)
     assert not walls[x2][y2], 'point2 is a wall: ' + str(point2)
     prob = PositionSearchProblem(gameState, start=point1, goal=point2, warn=False, visualize=False)
-    return len(search.bfs(prob))
+    return len(search.aStarSearch(prob, heuristic=manhattanHeuristic))
