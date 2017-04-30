@@ -573,10 +573,10 @@ def farthestFoodManhattanHeuristic(state, problem):
     if not foodPositions:
         return 0
 
-    return max([0] + [
+    return max((
         util.manhattanDistance(position, foodPosition)
         for foodPosition in foodPositions
-    ])
+    ))
 
 def allNFoodManhattanHeuristic(state, problem, n):
     position, foodGrid = state
@@ -736,8 +736,18 @@ class ClosestDotSearchAgent(SearchAgent):
         walls = gameState.getWalls()
         problem = AnyFoodSearchProblem(gameState)
 
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        return search.bfs(problem)
+
+def farthestIndividualFoodManhattanHeuristic(state, problem):
+    position = state
+    foodPositions = problem.food.asList()
+    if not foodPositions:
+        return 0
+
+    return max((
+        util.manhattanDistance(position, foodPosition)
+        for foodPosition in foodPositions
+    ))
 
 class AnyFoodSearchProblem(PositionSearchProblem):
     """
@@ -770,10 +780,8 @@ class AnyFoodSearchProblem(PositionSearchProblem):
         The state is Pacman's position. Fill this in with a goal test that will
         complete the problem definition.
         """
-        x,y = state
-
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        x, y = state
+        return self.food[x][y]
 
 def mazeDistance(point1, point2, gameState):
     """
