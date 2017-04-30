@@ -296,7 +296,7 @@ class CornersProblem(search.SearchProblem):
         space)
         """
         return (
-            (self.startingPosition[0], self.startingPosition[1]),
+            self.startingPosition,
             self.corners,
         )
 
@@ -329,7 +329,7 @@ class CornersProblem(search.SearchProblem):
             successors.append((
                 (
                     (nextx, nexty),
-                    tuple(corner for corner in cornersLeft if position != corner)
+                    tuple(corner for corner in cornersLeft if (nextx, nexty) != corner)
                 ),
                 action,
                 1,
@@ -546,7 +546,7 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access
     problem.heuristicInfo['wallCount']
     """
-    return 0  # 60-cost path, 16,688 expansions in 1.8s
+    # return 0  # 60-cost path, 16,688 expansions in 1.8s
     # return allFoodManhattanHeuristic(state, problem)  # Takes too long
     # return allNFoodManhattanHeuristic(state, problem, 2)  # 12,531 expansions in 1.5s
     # return allNFoodManhattanHeuristic(state, problem, 3)  # 16,688 expansions in 1.9s
